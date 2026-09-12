@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>p5.js Shape Editor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script src="https://cdn.jsdelivr.net/npm/p5@2.2.3/lib/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <style>
+      /* --- 既存のスタイル --- */
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--opening-background, #000000);
+        overflow: hidden;
+        touch-action: none;
+      }
+      canvas {
+        display: block;
+        touch-action: none;
+        z-index: 10;
+        position: relative;
+      }
+
+      .panel-title {
+        color: var(--label-color, white);
+        font-family: var(--app-font, Arial, sans-serif);
+        font-size: var(--label-size, 16px);
+        margin-bottom: 5px;
+      }
+      .hull-list-item {
+        color: white;
+        font-family: var(--app-font, Arial, sans-serif);
+        cursor: pointer;
+        padding: 5px;
+        background: #555;
+        margin-bottom: 5px;
+        border-radius: 3px;
+      }
+      .hull-list-item:hover {
+        background: #777;
+      }
+
+    </style>
+  </head>
+  <body>
+    <main></main>
+
+    <!-- スクリプト読み込み -->
+    <script src="parameters.js"></script>
+    <script src="theme.js"></script>
+    <script src="sketch.js"></script>
+    <script src="convex_hull.js"></script>
+    <script src="shape.js"></script>
+    <script src="mode_UI.js"></script>
+    <script src="hull_group.js"></script>
+    <script src="touch.js"></script>
+    <script src="monotone_Chain.js"></script>
+  </body>
+</html>
