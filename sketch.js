@@ -7,11 +7,15 @@ let colorMode = true; // false: dark mode, true: light mode
 // false にすると画像を非表示にし、白背景と図形だけを描画します。
 const SHOW_DEBUG_IMAGE = true;
 const DEBUG_IMAGE_PATHS = [
-  'data/image/pigeon.jpg',
-  'data/image/rabbit.jpg'
+  'data/image/TrafficCone.png',
+  'data/image/cherry.png',
+  'data/image/compass.png',
+  'data/image/pigeon.png',
+  'data/image/rabbit.png',
+  'data/image/school_chair.png'
 ];
 const DEBUG_IMAGE_OPACITY = 0.4;
-const debugImagePath = DEBUG_IMAGE_PATHS[Math.floor(Math.random() * DEBUG_IMAGE_PATHS.length)];
+let debugImagePath = '';
 let debugImg;
 let debugImgLoaded = false;
 let showDebugImage = SHOW_DEBUG_IMAGE;
@@ -20,17 +24,33 @@ let isExportingArtwork = false;
 async function loadDebugImage() {
   if (!SHOW_DEBUG_IMAGE) return;
 
-  // p5.js 2.x は preload() を呼ばず、loadImage() は Promise を返す。
-  // setup() から読み込み完了を待ち、解決した p5.Image を保持する。
-  try {
-    debugImg = await loadImage(debugImagePath);
-    debugImgLoaded = true;
-    console.info('デバッグ画像の読み込み完了:', debugImagePath);
-  } catch (error) {
-    debugImg = null;
-    debugImgLoaded = false;
-    console.warn('デバッグ画像の読み込みに失敗しました:', debugImagePath, error);
+  // ランダムな順に試し、1枚の欠落や破損では表示を止めない。
+  const imagePaths = getRandomizedImagePaths();
+  for (const imagePath of imagePaths) {
+    try {
+      const image = await loadImage(imagePath);
+      debugImg = image;
+      debugImagePath = imagePath;
+      debugImgLoaded = true;
+      console.info('デバッグ画像の読み込み完了:', debugImagePath);
+      return;
+    } catch (error) {
+      console.warn('デバッグ画像の読み込みに失敗しました。次の画像を試します:', imagePath, error);
+    }
   }
+
+  debugImg = null;
+  debugImgLoaded = false;
+  console.warn('デバッグ画像を読み込めませんでした。画像パスを確認してください。');
+}
+
+function getRandomizedImagePaths() {
+  const imagePaths = [...DEBUG_IMAGE_PATHS];
+  for (let i = imagePaths.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [imagePaths[i], imagePaths[j]] = [imagePaths[j], imagePaths[i]];
+  }
+  return imagePaths;
 }
 
 function drawDebugImage() {
