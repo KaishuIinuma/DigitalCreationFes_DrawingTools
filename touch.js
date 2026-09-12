@@ -180,12 +180,17 @@ function constrainShapeToCanvas(shape, targetX, targetY) {
   return { x, y };
 }
 
-function getCanvasPointFromTouch(event, index = 0) {
+function getCanvasPointFromClient(clientX, clientY) {
   const canvasEl = document.querySelector('canvas');
-  if (!canvasEl || !event.touches || !event.touches[index]) return null;
+  if (!canvasEl) return null;
   const rect = canvasEl.getBoundingClientRect();
+  return { x: (clientX - rect.left) * (width / rect.width), y: (clientY - rect.top) * (height / rect.height) };
+}
+
+function getCanvasPointFromTouch(event, index = 0) {
+  if (!event.touches || !event.touches[index]) return null;
   const touch = event.touches[index];
-  return { x: (touch.clientX - rect.left) * (width / rect.width), y: (touch.clientY - rect.top) * (height / rect.height) };
+  return getCanvasPointFromClient(touch.clientX, touch.clientY);
 }
 
 function getTouchPoints(event) {
@@ -194,6 +199,20 @@ function getTouchPoints(event) {
     return Array.from(event.touches)
       .map((_, index) => getCanvasPointFromTouch(event, index))
       .filter(Boolean);
+  }
+
+  // p5.js 2.x はタッチを PointerEvent として通知する。pointermove の
+  // コールバック中は p5.js の touches が1イベント前の座標なので、
+  // 動いた指だけ PointerEvent の最新座標へ差し替える。
+  if (event && event.pointerType === 'touch') {
+    const currentPoint = getCanvasPointFromClient(event.clientX, event.clientY);
+    const points = typeof touches !== 'undefined'
+      ? touches.map(touch => ({ x: touch.x, y: touch.y, id: touch.id }))
+      : [];
+    const currentIndex = points.findIndex(point => point.id === event.pointerId);
+    if (currentIndex >= 0) points[currentIndex] = { ...currentPoint, id: event.pointerId };
+    else if (currentPoint) points.push({ ...currentPoint, id: event.pointerId });
+    return points;
   }
 
   // p5.js のコールバックでは event が省略される環境があるため、
@@ -300,7 +319,10 @@ function handleTouchEnd(event) {
   } else if (pointerMoved) {
     deleteControlVisible = false;
   }
-  if (!event || !event.touches || event.touches.length < 2) {
+  const remainingTouchCount = event && event.touches
+    ? event.touches.length
+    : (typeof touches !== 'undefined' ? touches.length : 0);
+  if (remainingTouchCount < 2) {
     lastTouchDist = null; 
     initialW = null; 
     initialH = null; 
@@ -319,28 +341,41 @@ function touchStarted(event) { return handleTouchStart(event || window.event); }
 function touchMoved(event) { return handleTouchMove(event || window.event); }
 function touchEnded(event) { return handleTouchEnd(event || window.event); }
 
+function isTouchPointerEvent(event) {
+  return event && event.pointerType === 'touch';
+}
+
 function mouseMoved() {
   if (!(touches && touches.length > 0)) updatePointer(mouseX, mouseY);
   return false;
 }
-function mousePressed() { if (!(touches && touches.length > 0)) handleInputStart(mouseX, mouseY); return false; }
-function mouseDragged() {
-  if (!(touches && touches.length > 0)) {
-    updatePointer(mouseX, mouseY);
-    updatePointerMovement(mouseX, mouseY);
-    if (draggingShape) {
-      deleteControlVisible = false;
-      const constrained = constrainShapeToCanvas(draggingShape, mouseX, mouseY);
-      draggingShape.x = constrained.x; draggingShape.y = constrained.y;
-    }
+function mousePressed(event) {
+  // p5.js 2.x はタッチ入力も PointerEvent として mousePressed に送る。
+  if (isTouchPointerEvent(event)) return handleTouchStart(event);
+  handleInputStart(mouseX, mouseY);
+  return false;
+}
+function mouseDragged(event) {
+  // p5.js 2.x のタッチ移動は touchMoved ではなく mouseDragged に届く。
+  if (isTouchPointerEvent(event)) return handleTouchMove(event);
+
+  updatePointer(mouseX, mouseY);
+  updatePointerMovement(mouseX, mouseY);
+  if (draggingShape) {
+    deleteControlVisible = false;
+    const constrained = constrainShapeToCanvas(draggingShape, mouseX, mouseY);
+    draggingShape.x = constrained.x; draggingShape.y = constrained.y;
   }
   return false;
 }
-function mouseReleased() {
-  if (!(touches && touches.length > 0) && draggingShape && !shapes.includes(draggingShape) && isPointInCanvas(mouseX, mouseY)) {
+function mouseReleased(event) {
+  // pointerup の時点で p5.js の touches は更新済みなので、その状態で終了処理する。
+  if (isTouchPointerEvent(event)) return handleTouchEnd(event);
+
+  if (draggingShape && !shapes.includes(draggingShape) && isPointInCanvas(mouseX, mouseY)) {
     shapes.push(draggingShape); selectShape(draggingShape);
     deleteControlVisible = true;
-  } else if (!(touches && touches.length > 0) && draggingShape && !pointerMoved) {
+  } else if (draggingShape && !pointerMoved) {
     deleteControlVisible = true;
   } else if (pointerMoved) {
     deleteControlVisible = false;
