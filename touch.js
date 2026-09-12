@@ -382,3 +382,24 @@ function mouseReleased(event) {
   }
   draggingShape = null; return false;
 }
+
+function mouseWheel(event) {
+  if (!IS_DEV_MODE || selectedShapes.length !== 1 || !event || event.deltaY === 0) return;
+
+  const shape = selectedShapes[0];
+  const scaleFactor = event.deltaY < 0
+    ? 1 + DEBUG_WHEEL_SCALE_STEP
+    : 1 - DEBUG_WHEEL_SCALE_STEP;
+  const previousWidth = shape.w;
+  shape.w = constrain(shape.w * scaleFactor, MIN_SCALE, MAX_SCALE);
+
+  if (shape.type !== 'circle') {
+    const appliedScale = shape.w / previousWidth;
+    shape.h = constrain(shape.h * appliedScale, MIN_SCALE, MAX_SCALE);
+  }
+
+  const constrained = constrainShapeToCanvas(shape, shape.x, shape.y);
+  shape.x = constrained.x;
+  shape.y = constrained.y;
+  return false;
+}
