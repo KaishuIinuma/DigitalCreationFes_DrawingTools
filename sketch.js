@@ -3,9 +3,9 @@ p5.disableFriendlyErrors = true;
 // --- グローバル変数 ---
 let colorMode = true; // false: dark mode, true: light mode
 
-// --- デバッグ画像 ---
-// false にすると画像を非表示にし、白背景と図形だけを描画します。
-const SHOW_DEBUG_IMAGE = true;
+// --- 参照画像 ---
+// IS_DEV_MODE に関係なく常時利用する画像レイヤーです。
+const ENABLE_REFERENCE_IMAGE = true;
 const DEBUG_IMAGE_PATHS = [
   'data/image/TrafficCone.png',
   'data/image/cherry.png',
@@ -18,11 +18,11 @@ const DEBUG_IMAGE_OPACITY = 0.4;
 let debugImagePath = '';
 let debugImg;
 let debugImgLoaded = false;
-let showDebugImage = SHOW_DEBUG_IMAGE;
+let showDebugImage = ENABLE_REFERENCE_IMAGE;
 let isExportingArtwork = false;
 
 async function loadDebugImage() {
-  if (!SHOW_DEBUG_IMAGE) return;
+  if (!ENABLE_REFERENCE_IMAGE) return;
 
   // ランダムな順に試し、1枚の欠落や破損では表示を止めない。
   const imagePaths = getRandomizedImagePaths();
