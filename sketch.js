@@ -10,10 +10,11 @@ const DEBUG_IMAGE_PATHS = [
   'data/image/pigeon.jpg',
   'data/image/rabbit.jpg'
 ];
-const DEBUG_IMAGE_OPACITY = 1;
+const DEBUG_IMAGE_OPACITY = 0.4;
 const debugImagePath = DEBUG_IMAGE_PATHS[Math.floor(Math.random() * DEBUG_IMAGE_PATHS.length)];
 let debugImg;
 let debugImgLoaded = false;
+let showDebugImage = SHOW_DEBUG_IMAGE;
 
 async function loadDebugImage() {
   if (!SHOW_DEBUG_IMAGE) return;
@@ -32,7 +33,7 @@ async function loadDebugImage() {
 }
 
 function drawDebugImage() {
-  if (!SHOW_DEBUG_IMAGE || !debugImg || !debugImgLoaded) return;
+  if (!showDebugImage || !debugImg || !debugImgLoaded) return;
 
   const imgAspect = debugImg.width / debugImg.height;
   const canvasAspect = width / height;
@@ -87,6 +88,8 @@ let deleteControlVisible = false;
 let lastDeleteControlPosition = null;
 let hulls = [];
 let hullListDiv = null;
+let debugImageControl = null;
+let debugImageToggle = null;
 
 let toolbarRect = { x: 20, y: 0, w: TOOLBAR_BASE_WIDTH, h: TOOLBAR_BASE_HEIGHT, radius: TOOLBAR_BORDER_RADIUS };
 
@@ -134,6 +137,27 @@ function setupUI() {
   hullListDiv.style('right', '20px');
   hullListDiv.style('z-index', '20');
   hullListDiv.style('display', 'none');
+
+  debugImageControl = createDiv();
+  debugImageControl.addClass('debug-image-control');
+  createSpan('写真を表示する').parent(debugImageControl);
+
+  debugImageToggle = createButton('');
+  debugImageToggle.addClass('debug-image-toggle');
+  debugImageToggle.parent(debugImageControl);
+  debugImageToggle.elt.addEventListener('click', () => {
+    showDebugImage = !showDebugImage;
+    updateDebugImageToggle();
+  });
+  updateDebugImageToggle();
+}
+
+function updateDebugImageToggle() {
+  if (!debugImageToggle) return;
+  if (showDebugImage) debugImageToggle.addClass('is-on');
+  else debugImageToggle.removeClass('is-on');
+  debugImageToggle.attribute('aria-pressed', String(showDebugImage));
+  debugImageToggle.attribute('aria-label', showDebugImage ? '写真を非表示にする' : '写真を表示する');
 }
 
 function deleteSelected() {
