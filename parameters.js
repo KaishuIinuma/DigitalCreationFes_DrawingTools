@@ -9,8 +9,8 @@
 // ======================================
 
 // 図形のスケール制限
-const MAX_SCALE = 250;      // 図形の最大サイズ
-const MIN_SCALE = 20;       // 図形の最小サイズ
+const MAX_SCALE = 400;      // 図形の最大サイズ
+const MIN_SCALE = 10;       // 図形の最小サイズ
 
 // デフォルト図形サイズ
 const DEFAULT_SHAPE_SIZE = 60;  // 新規作成時の図形サイズ
