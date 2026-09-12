@@ -7,6 +7,8 @@ let initialTouchCenterX = 0;
 let initialTouchCenterY = 0;
 let lastTouchAngle = 0;
 let initialTouchAngle = 0;
+let lastTrackpadGestureScale = 1;
+let lastTrackpadGestureRotation = 0;
 
 function beginPointerAction(x, y) {
   pointerDownX = x;
@@ -178,6 +180,53 @@ function constrainShapeToCanvas(shape, targetX, targetY) {
     x += (toolbarRect.x + toolbarRect.w) - bounds.minX + 2;
   }
   return { x, y };
+}
+
+function scaleSelectedShape(shape, scaleFactor) {
+  const previousWidth = shape.w;
+  shape.w = constrain(shape.w * scaleFactor, MIN_SCALE, MAX_SCALE);
+
+  if (shape.type !== 'circle') {
+    const appliedScale = shape.w / previousWidth;
+    shape.h = constrain(shape.h * appliedScale, MIN_SCALE, MAX_SCALE);
+  }
+
+  const constrained = constrainShapeToCanvas(shape, shape.x, shape.y);
+  shape.x = constrained.x;
+  shape.y = constrained.y;
+}
+
+function getSelectedShapeForDevGesture() {
+  if (!IS_DEV_MODE || selectedShapes.length !== 1) return null;
+  return selectedShapes[0];
+}
+
+function handleTrackpadGestureStart(event) {
+  const shape = getSelectedShapeForDevGesture();
+  if (!shape) return;
+  event.preventDefault();
+  lastTrackpadGestureScale = event.scale || 1;
+  lastTrackpadGestureRotation = event.rotation || 0;
+}
+
+function handleTrackpadGestureChange(event) {
+  const shape = getSelectedShapeForDevGesture();
+  if (!shape) return;
+  event.preventDefault();
+
+  const scale = event.scale || 1;
+  const rotation = event.rotation || 0;
+  scaleSelectedShape(shape, scale / lastTrackpadGestureScale);
+  shape.rotation += (rotation - lastTrackpadGestureRotation) * Math.PI / 180;
+  lastTrackpadGestureScale = scale;
+  lastTrackpadGestureRotation = rotation;
+}
+
+function handleTrackpadGestureEnd(event) {
+  if (!getSelectedShapeForDevGesture()) return;
+  event.preventDefault();
+  lastTrackpadGestureScale = 1;
+  lastTrackpadGestureRotation = 0;
 }
 
 function getCanvasPointFromClient(clientX, clientY) {
@@ -384,22 +433,18 @@ function mouseReleased(event) {
 }
 
 function mouseWheel(event) {
-  if (!IS_DEV_MODE || selectedShapes.length !== 1 || !event || event.deltaY === 0) return;
+  const shape = getSelectedShapeForDevGesture();
+  if (!shape || !event) return;
 
-  const shape = selectedShapes[0];
+  if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+    shape.rotation += event.deltaX * DEBUG_TRACKPAD_ROTATION_SENSITIVITY;
+    return false;
+  }
+
+  if (event.deltaY === 0) return;
   const scaleFactor = event.deltaY < 0
     ? 1 + DEBUG_WHEEL_SCALE_STEP
     : 1 - DEBUG_WHEEL_SCALE_STEP;
-  const previousWidth = shape.w;
-  shape.w = constrain(shape.w * scaleFactor, MIN_SCALE, MAX_SCALE);
-
-  if (shape.type !== 'circle') {
-    const appliedScale = shape.w / previousWidth;
-    shape.h = constrain(shape.h * appliedScale, MIN_SCALE, MAX_SCALE);
-  }
-
-  const constrained = constrainShapeToCanvas(shape, shape.x, shape.y);
-  shape.x = constrained.x;
-  shape.y = constrained.y;
+  scaleSelectedShape(shape, scaleFactor);
   return false;
 }

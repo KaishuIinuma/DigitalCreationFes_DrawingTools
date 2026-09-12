@@ -133,9 +133,12 @@ function setupTouchHandling() {
   canvasEl.style.webkitTouchCallout = 'none';
   canvasEl.style.webkitUserSelect = 'none';
   canvasEl.style.userSelect = 'none';
+  canvasEl.addEventListener('gesturestart', handleTrackpadGestureStart, { passive: false });
+  canvasEl.addEventListener('gesturechange', handleTrackpadGestureChange, { passive: false });
+  canvasEl.addEventListener('gestureend', handleTrackpadGestureEnd, { passive: false });
 
-  // 入力処理は touch.js の p5.js コールバックだけに統一する。
-  // ここで DOM リスナーも登録すると、同じタッチが二重に処理される。
+  // ポインタ入力は touch.js の p5.js コールバックで処理する。
+  // gesture イベントだけは、タッチパッドの回転情報を得るため直接受け取る。
 }
 
 async function setup() {

@@ -98,6 +98,9 @@ const IS_DEV_MODE = true;
 // 開発モード中に、選択図形をマウスホイールで拡大・縮小する倍率
 const DEBUG_WHEEL_SCALE_STEP = 0.02;
 
+// 開発モード中に、タッチパッドの横スクロールで回転する感度（ラジアン/px）
+const DEBUG_TRACKPAD_ROTATION_SENSITIVITY = 0.01;
+
 // デバッグ画像の倍率（1.0 = キャンバスに収める、0.5 = 半分、2.0 = 2倍）
 const DEBUG_IMAGE_SCALE = 0.7;
 
