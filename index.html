@@ -67,6 +67,24 @@
         transform: translateX(36px);
       }
 
+      .save-artwork-button {
+        position: fixed;
+        top: 18px;
+        right: 24px;
+        z-index: 30;
+        padding: 8px 14px;
+        border: 4px solid var(--opening-foreground, #000);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--opening-foreground, #000);
+        font-family: Arial, sans-serif;
+        font-size: clamp(16px, 1.6vw, 24px);
+        font-weight: 600;
+        line-height: 1.1;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+
       .panel-title {
         color: var(--label-color, white);
         font-family: var(--app-font, Arial, sans-serif);

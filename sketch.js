@@ -15,6 +15,7 @@ const debugImagePath = DEBUG_IMAGE_PATHS[Math.floor(Math.random() * DEBUG_IMAGE_
 let debugImg;
 let debugImgLoaded = false;
 let showDebugImage = SHOW_DEBUG_IMAGE;
+let isExportingArtwork = false;
 
 async function loadDebugImage() {
   if (!SHOW_DEBUG_IMAGE) return;
@@ -90,6 +91,7 @@ let hulls = [];
 let hullListDiv = null;
 let debugImageControl = null;
 let debugImageToggle = null;
+let saveArtworkButton = null;
 
 let toolbarRect = { x: 20, y: 0, w: TOOLBAR_BASE_WIDTH, h: TOOLBAR_BASE_HEIGHT, radius: TOOLBAR_BORDER_RADIUS };
 
@@ -150,6 +152,11 @@ function setupUI() {
     updateDebugImageToggle();
   });
   updateDebugImageToggle();
+
+  saveArtworkButton = createButton('保存する');
+  saveArtworkButton.addClass('save-artwork-button');
+  saveArtworkButton.attribute('aria-label', '作成したグラフィックをPNGで保存する');
+  saveArtworkButton.elt.addEventListener('click', saveArtworkAsPng);
 }
 
 function updateDebugImageToggle() {
@@ -158,6 +165,24 @@ function updateDebugImageToggle() {
   else debugImageToggle.removeClass('is-on');
   debugImageToggle.attribute('aria-pressed', String(showDebugImage));
   debugImageToggle.attribute('aria-label', showDebugImage ? '写真を非表示にする' : '写真を表示する');
+}
+
+function saveArtworkAsPng() {
+  // UIと参照画像を除いた状態で一度だけ描画し、そのキャンバスを保存する。
+  isExportingArtwork = true;
+  try {
+    draw();
+    saveCanvas(getArtworkFilename(), 'png');
+  } finally {
+    isExportingArtwork = false;
+  }
+}
+
+function getArtworkFilename(date = new Date()) {
+  const pad = (value) => String(value).padStart(2, '0');
+  const datePart = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
+  const timePart = `${pad(date.getHours())}${pad(date.getMinutes())}`;
+  return `デジタルものづくりくりフェス_${datePart}_${timePart}`;
 }
 
 function deleteSelected() {
@@ -249,7 +274,7 @@ function updateLayoutSizes() {
 function positionUI() { }
 
 function drawConnections() {
-  const hoveredConnection = getClosestConnection(pointerX, pointerY);
+  const hoveredConnection = isExportingArtwork ? null : getClosestConnection(pointerX, pointerY);
   push();
   stroke(getCanvasForegroundColor());
   strokeWeight(CONNECTION_STROKE_WEIGHT);
@@ -260,7 +285,7 @@ function drawConnections() {
     let pt1 = pts1[conn.v1.index];
     let pt2 = pts2[conn.v2.index];
     if (pt1 && pt2) {
-      if (conn === selectedConnection || conn === hoveredConnection) {
+      if (!isExportingArtwork && (conn === selectedConnection || conn === hoveredConnection)) {
         drawingContext.setLineDash([CONNECTION_DASH_LENGTH, CONNECTION_DASH_GAP]);
         drawingContext.lineDashOffset = -millis() / CONNECTION_DASH_SPEED;
       }
@@ -268,7 +293,7 @@ function drawConnections() {
       drawingContext.setLineDash([]);
     }
   });
-  if (selectedVertices.length === 1 && !draggingShape) {
+  if (!isExportingArtwork && selectedVertices.length === 1 && !draggingShape) {
     const pos1 = selectedVertices[0].shape.getVertices()[selectedVertices[0].index];
     if (pos1) line(pos1.x, pos1.y, pointerX, pointerY);
   }
@@ -320,14 +345,16 @@ function drawVertices() {
 }
 
 function draw() {
-  background(getCanvasBackgroundColor());
-  drawDebugImage(); // 白背景と図形の間に描画
+  background(isExportingArtwork ? 255 : getCanvasBackgroundColor());
+  if (!isExportingArtwork) drawDebugImage(); // 白背景と図形の間に描画
 
   drawConnections();
   hulls.forEach((hull) => hull.draw());
   shapes.forEach((s) => s.display());
-  if (draggingShape && !shapes.includes(draggingShape)) draggingShape.display();
-  drawVertices();
-  drawToolbarIcons();
-  drawDeleteControl();
+  if (!isExportingArtwork) {
+    if (draggingShape && !shapes.includes(draggingShape)) draggingShape.display();
+    drawVertices();
+    drawToolbarIcons();
+    drawDeleteControl();
+  }
 }

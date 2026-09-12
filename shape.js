@@ -35,13 +35,13 @@ class Shape {
       case 'triangle': triangle(0, -this.h / 2, -this.w / 2, this.h / 2, this.w / 2, this.h / 2); break;
     }
 
-    // 💡 イージングの計算 (0.0 から 1.0 へ)
-    const isSelected = selectedShapes.includes(this);
-    const targetEase = isSelected ? 1.0 : 0.0;
-    this.selectEase += (targetEase - this.selectEase) * SELECTION_EASING_SPEED;
+    // 選択枠は編集画面だけに描画し、PNGには含めない。
+    if (!isExportingArtwork) {
+      const isSelected = selectedShapes.includes(this);
+      const targetEase = isSelected ? 1.0 : 0.0;
+      this.selectEase += (targetEase - this.selectEase) * SELECTION_EASING_SPEED;
 
-    // 💡 0.01以上であれば破線を描画
-    if (this.selectEase > 0.01) {
+      if (this.selectEase > 0.01) {
       push();
       noFill();
       stroke(getCanvasForegroundColor());
@@ -66,6 +66,7 @@ class Shape {
       drawingContext.setLineDash([]);
       drawingContext.globalAlpha = 1.0;
       pop();
+    }
     }
     pop();
   }
