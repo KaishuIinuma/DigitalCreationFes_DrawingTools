@@ -85,7 +85,7 @@ function getCanvasBackgroundColor() {
 }
 
 function getCanvasForegroundColor() {
-  return colorMode ? 0 : 255;
+  return isExportingArtwork ? 0 : (colorMode ? 0 : 255);
 }
 
 function applyColorModeToOpeningScreen() {
@@ -175,8 +175,8 @@ function setupUI() {
 
   saveArtworkButton = createButton('保存する');
   saveArtworkButton.addClass('save-artwork-button');
-  saveArtworkButton.attribute('aria-label', '作成したグラフィックをPNGで保存する');
-  saveArtworkButton.elt.addEventListener('click', saveArtworkAsPng);
+  saveArtworkButton.attribute('aria-label', `作成したグラフィックを${IS_DEV_MODE ? 'SVG' : 'PNG'}で保存する`);
+  saveArtworkButton.elt.addEventListener('click', saveArtwork);
 }
 
 function updateDebugImageToggle() {
@@ -185,6 +185,11 @@ function updateDebugImageToggle() {
   else debugImageToggle.removeClass('is-on');
   debugImageToggle.attribute('aria-pressed', String(showDebugImage));
   debugImageToggle.attribute('aria-label', showDebugImage ? '写真を非表示にする' : '写真を表示する');
+}
+
+function saveArtwork() {
+  if (IS_DEV_MODE) saveArtworkAsSvg();
+  else saveArtworkAsPng();
 }
 
 function saveArtworkAsPng() {
@@ -196,6 +201,66 @@ function saveArtworkAsPng() {
   } finally {
     isExportingArtwork = false;
   }
+}
+
+function saveArtworkAsSvg() {
+  const svgBlob = new Blob([buildArtworkSvg()], { type: 'image/svg+xml;charset=utf-8' });
+  const downloadUrl = URL.createObjectURL(svgBlob);
+  const downloadLink = document.createElement('a');
+  downloadLink.href = downloadUrl;
+  downloadLink.download = `${getArtworkFilename()}.svg`;
+  downloadLink.style.display = 'none';
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+  setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+}
+
+function buildArtworkSvg() {
+  const stroke = '#000000';
+  const parts = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+    `<rect width="${width}" height="${height}" fill="#ffffff"/>`
+  ];
+
+  connections.forEach((connection) => {
+    const point1 = connection.v1.shape.getVertices()[connection.v1.index];
+    const point2 = connection.v2.shape.getVertices()[connection.v2.index];
+    if (point1 && point2) {
+      parts.push(`<line x1="${point1.x}" y1="${point1.y}" x2="${point2.x}" y2="${point2.y}" stroke="${stroke}" stroke-width="${CONNECTION_STROKE_WEIGHT}" fill="none"/>`);
+    }
+  });
+
+  hulls.forEach((hull) => {
+    const hullPoints = calculateConvexHull(hull.getPoints());
+    if (!hullPoints || hullPoints.length < 3) return;
+    parts.push(`<polygon points="${hullPoints.map((point) => `${point.x},${point.y}`).join(' ')}" fill="none" stroke="${stroke}" stroke-width="${HULL_STROKE_WEIGHT}" stroke-linejoin="round"/>`);
+  });
+
+  shapes.forEach((shape) => {
+    const fill = escapeSvgAttribute(shape.col === 'none' ? 'none' : shape.col);
+    const commonAttributes = `fill="${fill}" stroke="${stroke}" stroke-width="${SHAPE_STROKE_WEIGHT}"`;
+    if (shape.type === 'circle') {
+      parts.push(`<circle cx="${shape.x}" cy="${shape.y}" r="${shape.w / 2}" ${commonAttributes}/>`);
+    } else if (shape.type === 'rect') {
+      const x = shape.x - shape.w / 2;
+      const y = shape.y - shape.h / 2;
+      const rotation = shape.rotation * 180 / Math.PI;
+      parts.push(`<rect x="${x}" y="${y}" width="${shape.w}" height="${shape.h}" transform="rotate(${rotation} ${shape.x} ${shape.y})" ${commonAttributes}/>`);
+    } else if (shape.type === 'triangle') {
+      const points = shape.getVertices().map((point) => `${point.x},${point.y}`).join(' ');
+      parts.push(`<polygon points="${points}" ${commonAttributes}/>`);
+    }
+  });
+
+  parts.push('</svg>');
+  return parts.join('');
+}
+
+function escapeSvgAttribute(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;'
+  })[character]);
 }
 
 function getArtworkFilename(date = new Date()) {
