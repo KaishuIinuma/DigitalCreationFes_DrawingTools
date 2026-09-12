@@ -188,11 +188,27 @@ function getCanvasPointFromTouch(event, index = 0) {
   return { x: (touch.clientX - rect.left) * (width / rect.width), y: (touch.clientY - rect.top) * (height / rect.height) };
 }
 
+function getTouchPoints(event) {
+  // ブラウザの TouchEvent が渡される場合は、画面上の座標をキャンバス座標へ変換する。
+  if (event && event.touches && event.touches.length > 0) {
+    return Array.from(event.touches)
+      .map((_, index) => getCanvasPointFromTouch(event, index))
+      .filter(Boolean);
+  }
+
+  // p5.js のコールバックでは event が省略される環境があるため、
+  // p5.js が維持している touches 配列も入力元として使う。
+  if (typeof touches !== 'undefined' && touches.length > 0) {
+    return touches.map(touch => ({ x: touch.x, y: touch.y }));
+  }
+
+  return [];
+}
+
 function handleTouchStart(event) {
-  if (!event || !event.touches || event.touches.length === 0) return false;
-  event.preventDefault();
-  const points = Array.from(event.touches).map((_, index) => getCanvasPointFromTouch(event, index));
-  if (points.length === 0 || points.some((p) => !p)) return false;
+  const points = getTouchPoints(event);
+  if (points.length === 0) return false;
+  if (event && event.cancelable) event.preventDefault();
   if (points.length === 1) updatePointer(points[0].x, points[0].y);
   if (points.length === 1) {
     updatePointerMovement(points[0].x, points[0].y);
@@ -232,11 +248,13 @@ function handleTouchStart(event) {
 }
 
 function handleTouchMove(event) {
-  if (!event || !event.touches || event.touches.length === 0) return false;
-  event.preventDefault();
-  const points = Array.from(event.touches).map((_, index) => getCanvasPointFromTouch(event, index));
-  if (points.length === 0 || points.some((p) => !p)) return false;
-  if (points.length === 1) updatePointer(points[0].x, points[0].y);
+  const points = getTouchPoints(event);
+  if (points.length === 0) return false;
+  if (event && event.cancelable) event.preventDefault();
+  if (points.length === 1) {
+    updatePointer(points[0].x, points[0].y);
+    updatePointerMovement(points[0].x, points[0].y);
+  }
 
   if (points.length >= 2) {
     if (selectedShapes.length === 1 && lastTouchDist && initialW !== null && initialH !== null) {
@@ -272,8 +290,7 @@ function handleTouchMove(event) {
 }
 
 function handleTouchEnd(event) {
-  if (!event) return false;
-  event.preventDefault();
+  if (event && event.cancelable) event.preventDefault();
   if (draggingShape && !shapes.includes(draggingShape) && isPointInCanvas(draggingShape.x, draggingShape.y)) {
     shapes.push(draggingShape);
     selectShape(draggingShape);
@@ -283,7 +300,7 @@ function handleTouchEnd(event) {
   } else if (pointerMoved) {
     deleteControlVisible = false;
   }
-  if (!event.touches || event.touches.length < 2) { 
+  if (!event || !event.touches || event.touches.length < 2) {
     lastTouchDist = null; 
     initialW = null; 
     initialH = null; 
