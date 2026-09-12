@@ -95,5 +95,8 @@ const CONNECTION_DASH_SPEED = 40;  // 接続線のアニメーション速度（
 // 開発モード（true で詳細ログなどを表示）
 const IS_DEV_MODE = true;
 
+// デバッグ画像の倍率（1.0 = キャンバスに収める、0.5 = 半分、2.0 = 2倍）
+const DEBUG_IMAGE_SCALE = 0.7;
+
 
 // ======================================

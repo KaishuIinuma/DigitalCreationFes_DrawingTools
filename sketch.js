@@ -5,7 +5,7 @@ let colorMode = true; // false: dark mode, true: light mode
 
 // --- デバッグ画像 ---
 // false にすると画像を非表示にし、白背景と図形だけを描画します。
-const SHOW_DEBUG_IMAGE = false;
+const SHOW_DEBUG_IMAGE = true;
 const DEBUG_IMAGE_PATHS = [
   'data/image/pigeon.jpg',
   'data/image/rabbit.jpg'
@@ -15,16 +15,19 @@ const debugImagePath = DEBUG_IMAGE_PATHS[Math.floor(Math.random() * DEBUG_IMAGE_
 let debugImg;
 let debugImgLoaded = false;
 
-function preload() {
-  if (SHOW_DEBUG_IMAGE) {
-    debugImg = loadImage(
-      debugImagePath,
-      () => {
-        debugImgLoaded = true;
-        console.info('デバッグ画像を表示:', debugImagePath);
-      },
-      () => { console.warn('デバッグ画像の読み込みに失敗しました:', debugImagePath); }
-    );
+async function loadDebugImage() {
+  if (!SHOW_DEBUG_IMAGE) return;
+
+  // p5.js 2.x は preload() を呼ばず、loadImage() は Promise を返す。
+  // setup() から読み込み完了を待ち、解決した p5.Image を保持する。
+  try {
+    debugImg = await loadImage(debugImagePath);
+    debugImgLoaded = true;
+    console.info('デバッグ画像の読み込み完了:', debugImagePath);
+  } catch (error) {
+    debugImg = null;
+    debugImgLoaded = false;
+    console.warn('デバッグ画像の読み込みに失敗しました:', debugImagePath, error);
   }
 }
 
@@ -41,6 +44,8 @@ function drawDebugImage() {
     drawH = height;
     drawW = height * imgAspect;
   }
+  drawW *= DEBUG_IMAGE_SCALE;
+  drawH *= DEBUG_IMAGE_SCALE;
   const drawX = (width - drawW) / 2;
   const drawY = (height - drawH) / 2;
 
@@ -90,7 +95,6 @@ let lastTouchX = null, lastTouchY = null;
 let lastTouchDist = null;
 
 // UI要素
-// 画像は index.html の img タグで管理
 
 function stopPropagationOn(el) {
   el.addEventListener('mousedown', (e) => e.stopPropagation());
@@ -109,7 +113,7 @@ function setupTouchHandling() {
   // ここで DOM リスナーも登録すると、同じタッチが二重に処理される。
 }
 
-function setup() {
+async function setup() {
   document.body.style.margin = '0';
   document.body.style.overflow = 'hidden';
   applyColorModeToOpeningScreen();
@@ -119,6 +123,7 @@ function setup() {
 
   setupUI();
   positionUI();
+  await loadDebugImage();
 }
 
 function setupUI() {
