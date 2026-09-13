@@ -155,6 +155,10 @@ async function setup() {
 }
 
 function setupUI() {
+  if (IS_DEV_MODE) {
+    createDiv('DEBUG MODE').addClass('debug-mode-indicator');
+  }
+
   // Hull の一覧は、Hull を初めて作成したときだけ表示する。
   hullListDiv = createDiv();
   hullListDiv.style('position', 'absolute');
