@@ -93,7 +93,7 @@ const CONNECTION_DASH_SPEED = 40;  // 接続線のアニメーション速度（
 // ======================================
 
 // 開発モード（true で詳細ログなどを表示）
-const IS_DEV_MODE = true;
+const IS_DEV_MODE = false;
 
 // 開発モード中に、選択図形をマウスホイールで拡大・縮小する倍率
 const DEBUG_WHEEL_SCALE_STEP = 0.02;
